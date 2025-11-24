@@ -47,8 +47,13 @@ if (!supabaseUrl || !supabaseKey) {
 
 // Middleware
 // CORS configuration - allow multiple origins in development
+// Add your Cloudflare Pages URL here when deploying
 const allowedOrigins = process.env.NODE_ENV === 'production'
-  ? [process.env.VITE_SITE_URL || process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000']
+  ? [
+      process.env.VITE_SITE_URL || process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
+      // Add your Cloudflare Pages URL here (e.g., https://imobile-v1.pages.dev)
+      process.env.CLOUDFLARE_PAGES_URL,
+    ].filter(Boolean)
   : [
       'http://localhost:3000',
       'http://localhost:5173',
@@ -57,6 +62,8 @@ const allowedOrigins = process.env.NODE_ENV === 'production'
       'http://127.0.0.1:5173',
       'http://127.0.0.1:5174',
       process.env.VITE_DEV_URL,
+      // Allow Cloudflare Pages in development too
+      process.env.CLOUDFLARE_PAGES_URL,
     ].filter(Boolean)
 
 app.use(cors({
