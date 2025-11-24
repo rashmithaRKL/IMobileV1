@@ -10,6 +10,7 @@
     "start:server": "node dist-server/index.js",
     "build:server": "tsc -p tsconfig.server.json",
     "build:all": "npm run build && npm run build:server",
+    "deploy": "wrangler pages deploy dist",
     "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
     "test": "echo \"Error: no test specified\" && exit 1",
     "e2e": "echo \"Error: no e2e test specified\" && exit 1"
