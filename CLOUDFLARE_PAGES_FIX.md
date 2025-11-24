@@ -31,6 +31,12 @@ When setting up your Pages project:
 - Or use the npm script: `npm run deploy` which runs `wrangler pages deploy dist`
 - The difference: `wrangler deploy` = Workers, `wrangler pages deploy` = Pages
 
+**Alternative if deploy command doesn't support Pages:**
+If your Cloudflare setup requires `wrangler deploy`, use:
+- Deploy command: `npx wrangler deploy --assets=./dist`
+- OR: `npm run deploy:worker`
+- A `wrangler.jsonc` file has been created to support this
+
 ### Step 3: Environment Variables
 
 Add these in **Settings → Environment variables**:
