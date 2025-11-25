@@ -26,7 +26,7 @@ echo.
 echo Starting Cloudflare Tunnel...
 echo Your backend will be available at the URL shown below:
 echo.
-cloudflared tunnel --config cloudflare-tunnel-config.yml run
+C:\cloudflared\cloudflared.exe tunnel --config cloudflare-tunnel-config.yml run
 
 pause
 
