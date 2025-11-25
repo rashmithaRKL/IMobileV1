@@ -1,10 +1,11 @@
 import { createClient } from '../client'
+import { getApiUrl } from '../../utils/api'
 
 export const authService = {
   // Sign up
   async signUp(email: string, password: string, name?: string, whatsapp?: string, captchaToken?: string) {
     // Route through our server API to avoid client-side network issues
-    const res = await fetch('/api/auth/signup', {
+    const res = await fetch(getApiUrl('/api/auth/signup'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password, name, whatsapp }),
@@ -102,7 +103,7 @@ export const authService = {
       if (typeof window !== 'undefined') {
         let res: Response
         try {
-          res = await fetch('/api/auth/signin', {
+          res = await fetch(getApiUrl('/api/auth/signin'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
@@ -279,7 +280,7 @@ export const authService = {
         // Also delete from database if we have a token
         if (storedToken) {
           // Call backend to delete session from database
-          await fetch('/api/auth/signout', {
+          await fetch(getApiUrl('/api/auth/signout'), {
             method: 'POST',
             headers: { 'x-session-token': storedToken },
             credentials: 'include',

@@ -54,7 +54,7 @@ function VerifyEmailContent() {
 
     try {
       // Call server API to avoid client-side network/cors issues
-      const res = await fetch('/api/auth/verify-otp', {
+      const res = await fetch(getApiUrl('/api/auth/verify-otp'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, token: verificationCode, type: 'signup' }),

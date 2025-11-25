@@ -56,7 +56,7 @@ export default function SignInPage() {
       try {
         const controller = new AbortController()
         const timeoutId = setTimeout(() => controller.abort(), 3000)
-        const response = await fetch('/api/test-env', {
+        const response = await fetch(getApiUrl('/api/test-env'), {
           signal: controller.signal,
           cache: 'no-store',
         })

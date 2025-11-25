@@ -1,4 +1,5 @@
 import { createClient } from '../client'
+import { getApiUrl } from '../../utils/api'
 import { withRetry, handleSupabaseError } from '../utils/error-handler'
 import type { Database } from '../types'
 
@@ -173,7 +174,7 @@ export const productsService = {
       // Try API first only if Supabase is configured
       if (typeof window !== 'undefined' && hasSupabaseConfig) {
         try {
-          const response = await fetch('/api/products/categories', { 
+          const response = await fetch(getApiUrl('/api/products/categories'), { 
             cache: 'no-store',
             signal: AbortSignal.timeout(5000), // 5 second timeout
           })
