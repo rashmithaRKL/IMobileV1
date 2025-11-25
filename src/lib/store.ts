@@ -1,4 +1,5 @@
 import { create } from "zustand"
+import { getApiUrl } from './utils/api'
 
 export interface CartItem {
   id: string
