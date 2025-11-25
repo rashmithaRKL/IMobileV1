@@ -16,9 +16,19 @@ interface AdminState {
 export const useAdminStore = create<AdminState>((set) => ({
   user: null,
   isAuthenticated: false,
-  login: async (email: string, password: string) => {
-    // Simple authentication - in production, use proper backend auth
-    if (email === "imobile.admin@gmail.com" && password === "123456") {
+  login: async (email: string, otp: string, userData?: any) => {
+    // OTP-based authentication - userData comes from backend after OTP verification
+    if (userData) {
+      set({
+        user: {
+          id: userData.id || "1",
+          email: email,
+          name: userData.name || "Admin",
+        },
+        isAuthenticated: true,
+      })
+    } else {
+      // Fallback for development/testing
       set({
         user: {
           id: "1",
@@ -27,8 +37,6 @@ export const useAdminStore = create<AdminState>((set) => ({
         },
         isAuthenticated: true,
       })
-    } else {
-      throw new Error("Invalid credentials")
     }
   },
   logout: () => {

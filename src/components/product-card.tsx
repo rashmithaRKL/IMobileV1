@@ -64,6 +64,22 @@ function ProductCard({ id, name, price, image, condition, discount, specs, onQui
     }
   }
 
+  // Parse specs if it's a JSON string
+  let parsedSpecs: any = null
+  if (specs) {
+    try {
+      parsedSpecs = typeof specs === 'string' ? JSON.parse(specs) : specs
+    } catch {
+      // If parsing fails, treat as string
+    }
+  }
+
+  // Extract storage, RAM, warranty from specs
+  const storage = parsedSpecs?.storage || parsedSpecs?.Storage || ''
+  const ram = parsedSpecs?.ram || parsedSpecs?.RAM || ''
+  const warranty = parsedSpecs?.Warranty || parsedSpecs?.warranty || 'Company Warranty'
+  const specsText = [storage, ram, warranty].filter(Boolean).join(' • ')
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -91,57 +107,58 @@ function ProductCard({ id, name, price, image, condition, discount, specs, onQui
             />
           </motion.div>
 
-          {/* Condition Badge */}
+          {/* Discount Badge - Top Left */}
+          {discount && (
+            <motion.div
+              className="absolute top-3 left-3 z-10"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.3 }}
+            >
+              <span className="px-2.5 py-1 rounded text-xs font-bold bg-blue-500 text-white shadow-md">
+                -{discount}%
+              </span>
+            </motion.div>
+          )}
+
+          {/* Condition Badge - Top Right */}
           <motion.div
-            className="absolute top-3 right-3"
+            className="absolute top-3 right-3 z-10"
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.3 }}
           >
             <span
-              className={`px-3 py-1 rounded-full text-xs font-semibold shadow-md ${
+              className={`px-2.5 py-1 rounded text-xs font-semibold shadow-md ${
                 condition === "new" ? "bg-green-500 text-white" : "bg-amber-500 text-white"
               }`}
             >
               {condition === "new" ? "NEW" : "Used"}
             </span>
           </motion.div>
-
-          {/* Discount Badge */}
-          {discount && (
-            <motion.div
-              className="absolute top-3 left-3"
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.3 }}
-            >
-              <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-500 text-white shadow-md">
-                -{discount}%
-              </span>
-            </motion.div>
-          )}
         </div>
 
         {/* Content */}
-        <div className="p-3 sm:p-4">
+        <div className="p-4">
+          {/* Product Name */}
           <motion.h3
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             transition={{ duration: 0.4, delay: 0.1 }}
-            className="font-semibold text-sm sm:text-base line-clamp-2 mb-2 text-gray-900 dark:text-white"
+            className="font-bold text-base mb-2 text-gray-900 dark:text-white line-clamp-2"
           >
             {name}
           </motion.h3>
 
-          {/* Specs/Details */}
-          {specs && (
+          {/* Specs - Clean Format */}
+          {specsText && (
             <motion.p
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1 }}
               transition={{ duration: 0.4, delay: 0.15 }}
-              className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2"
+              className="text-xs text-gray-600 dark:text-gray-400 mb-3"
             >
-              {specs}
+              {specsText}
             </motion.p>
           )}
 
@@ -153,11 +170,11 @@ function ProductCard({ id, name, price, image, condition, discount, specs, onQui
             className="flex flex-col gap-1"
           >
             {originalPrice && (
-              <span className="text-xs sm:text-sm text-gray-400 line-through">
+              <span className="text-xs text-gray-400 dark:text-gray-500 line-through">
                 ${originalPrice.toFixed(2)}
               </span>
             )}
-            <span className="text-base sm:text-lg font-bold text-blue-600 dark:text-primary">
+            <span className="text-lg font-bold text-gray-900 dark:text-white">
               ${price.toFixed(2)}
             </span>
           </motion.div>

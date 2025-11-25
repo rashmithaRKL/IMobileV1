@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express'
 import authRouter from './auth'
 import productsRouter from './products'
+import adminRouter from './admin'
 import { testEnvHandler } from './test-env'
 
 const router = Router()
@@ -23,6 +24,7 @@ const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => P
 // Mount route handlers
 router.use('/auth', authRouter)
 router.use('/products', productsRouter)
+router.use('/admin', adminRouter)
 router.get('/test-env', asyncHandler(testEnvHandler))
 
 export default router

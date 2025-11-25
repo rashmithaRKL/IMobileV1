@@ -213,6 +213,16 @@ export default function ShopPage() {
                 animate="visible"
               >
                 {filteredProducts.map((product) => {
+                  // Calculate discount if original_price exists
+                  let discount: number | undefined = undefined
+                  if (product.original_price && product.price) {
+                    const originalPrice = Number(product.original_price)
+                    const currentPrice = Number(product.price)
+                    if (originalPrice > currentPrice) {
+                      discount = Math.round(((originalPrice - currentPrice) / originalPrice) * 100)
+                    }
+                  }
+
                   // Convert database product to ProductCard format
                   const productCardProps = {
                     id: product.id,
@@ -223,7 +233,7 @@ export default function ShopPage() {
                     category: product.category,
                     brand: product.brand || undefined,
                     specs: product.specs ? JSON.stringify(product.specs) : undefined,
-                    discount: undefined, // Calculate discount if needed
+                    discount: discount,
                   }
                   return (
                     <motion.div key={product.id} variants={itemVariants}>
