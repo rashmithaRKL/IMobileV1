@@ -51,8 +51,11 @@ if (!supabaseUrl || !supabaseKey) {
 const allowedOrigins = process.env.NODE_ENV === 'production'
   ? [
       process.env.VITE_SITE_URL || process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
-      // Add your Cloudflare Pages URL here (e.g., https://imobile-v1.pages.dev)
+      // Cloudflare Pages/Workers URLs
       process.env.CLOUDFLARE_PAGES_URL,
+      'https://imobile.kalhararashmitha.workers.dev', // Your frontend URL
+      'https://*.workers.dev', // Allow all workers.dev subdomains
+      'https://*.pages.dev', // Allow all pages.dev subdomains
     ].filter(Boolean)
   : [
       'http://localhost:3000',
@@ -64,20 +67,42 @@ const allowedOrigins = process.env.NODE_ENV === 'production'
       process.env.VITE_DEV_URL,
       // Allow Cloudflare Pages in development too
       process.env.CLOUDFLARE_PAGES_URL,
+      'https://imobile.kalhararashmitha.workers.dev',
+      'https://*.workers.dev',
+      'https://*.pages.dev',
     ].filter(Boolean)
 
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (like mobile apps, Postman, or same-origin requests)
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (!origin) {
+      callback(null, true)
+      return
+    }
+    
+    // Check exact matches
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true)
+      return
+    }
+    
+    // Check wildcard patterns for Cloudflare domains
+    const isCloudflareDomain = 
+      origin.endsWith('.workers.dev') || 
+      origin.endsWith('.pages.dev') ||
+      origin.endsWith('.trycloudflare.com')
+    
+    if (isCloudflareDomain) {
+      callback(null, true)
+      return
+    }
+    
+    // In development, allow all origins for easier debugging
+    if (process.env.NODE_ENV !== 'production') {
       callback(null, true)
     } else {
-      // In development, allow all origins for easier debugging
-      if (process.env.NODE_ENV !== 'production') {
-        callback(null, true)
-      } else {
-        callback(new Error('Not allowed by CORS'))
-      }
+      console.warn(`⚠️  CORS blocked origin: ${origin}`)
+      callback(new Error('Not allowed by CORS'))
     }
   },
   credentials: true,
