@@ -1,23 +1,27 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { Link } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
 import { Plus, Minus, Star } from "lucide-react"
 import { useCartStore, type CartItem } from "@/lib/store"
+import { getApiUrl } from "@/lib/utils/api"
 
 interface Product {
   id: string
   name: string
   price: number
   image: string
-  rating: number
-  reviews: number
+  rating?: number
+  reviews?: number
   condition: "new" | "used"
   discount?: number
 }
 
 interface SimilarProductsProps {
-  products: Product[]
+  products?: Product[] // Optional - for backward compatibility
+  currentProductId?: string // New: fetch similar products by product ID
+  brand?: string // New: filter by brand
 }
 
 function SimilarProductCard({ product, index }: { product: Product; index: number }) {
@@ -228,12 +232,85 @@ function SimilarProductCard({ product, index }: { product: Product; index: numbe
   )
 }
 
-export default function SimilarProducts({ products }: SimilarProductsProps) {
+export default function SimilarProducts({ products, currentProductId, brand }: SimilarProductsProps) {
+  const [similarProducts, setSimilarProducts] = useState<Product[]>([])
+  const [loading, setLoading] = useState(false)
+
+  // Fetch similar products from backend if currentProductId and brand are provided
+  useEffect(() => {
+    const fetchSimilarProducts = async () => {
+      if (products) {
+        // If products are provided directly, use them
+        setSimilarProducts(products)
+        return
+      }
+
+      if (!currentProductId || !brand) {
+        setSimilarProducts([])
+        return
+      }
+
+      try {
+        setLoading(true)
+        // Fetch products with same brand, excluding current product
+        const params = new URLSearchParams({
+          brand: brand,
+        })
+        const response = await fetch(getApiUrl(`/api/products/list?${params.toString()}`))
+        
+        if (response.ok) {
+          const result = await response.json()
+          // Filter out current product and limit to 4
+          const filtered = (result.data || [])
+            .filter((p: any) => p.id !== currentProductId)
+            .slice(0, 4)
+            .map((p: any) => ({
+              id: p.id,
+              name: p.name,
+              price: Number(p.price),
+              image: p.image || p.images?.[0] || "/placeholder.svg",
+              rating: p.rating || 4.5,
+              reviews: p.reviews || 0,
+              condition: p.condition,
+              discount: p.original_price && p.price 
+                ? Math.round(((Number(p.original_price) - Number(p.price)) / Number(p.original_price)) * 100)
+                : undefined,
+            }))
+          setSimilarProducts(filtered)
+        }
+      } catch (err) {
+        console.error("Error fetching similar products:", err)
+        setSimilarProducts([])
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchSimilarProducts()
+  }, [products, currentProductId, brand])
+
+  if (loading) {
+    return (
+      <div className="border-t border-border pt-12">
+        <h2 className="text-2xl font-bold mb-8">Similar Products</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="h-80 bg-muted animate-pulse rounded-lg" />
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  if (!similarProducts || similarProducts.length === 0) {
+    return null // Don't show section if no similar products
+  }
+
   return (
     <div className="border-t border-border pt-12">
       <h2 className="text-2xl font-bold mb-8">Similar Products</h2>
       <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-        {products.map((product, index) => (
+        {similarProducts.map((product, index) => (
           <SimilarProductCard key={product.id} product={product} index={index} />
         ))}
       </div>
