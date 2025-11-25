@@ -64,19 +64,24 @@ const STATUS_STYLES: Record<StatusLevel, string> = {
 
 function getApiBaseUrl() {
   // In development, use relative URLs which will go through Vite proxy
-  // In production, use the actual site URL
   if (import.meta.env.DEV || import.meta.env.MODE === 'development') {
     // Use relative URLs - Vite proxy will handle routing to port 4000
     return ''
   }
   
-  // In production, use the configured site URL
+  // In production, prioritize VITE_API_URL (for Cloudflare Tunnel or custom backend)
+  const apiUrl = import.meta.env.VITE_API_URL
+  if (apiUrl) {
+    return apiUrl.startsWith("http") ? apiUrl : `https://${apiUrl}`
+  }
+  
+  // Fallback to site URL if no API URL is configured
   const envUrl = import.meta.env.VITE_SITE_URL || import.meta.env.NEXT_PUBLIC_SITE_URL
   if (envUrl) {
     return envUrl.startsWith("http") ? envUrl : `https://${envUrl}`
   }
 
-  // Fallback - but should not happen in production
+  // Last fallback - use current origin (not ideal for production)
   if (typeof window !== 'undefined') {
     return window.location.origin
   }
