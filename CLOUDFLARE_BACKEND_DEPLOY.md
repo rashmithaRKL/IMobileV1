@@ -22,20 +22,40 @@ This exposes your Express backend through Cloudflare's network.
 
 ### Step 1: Install Cloudflare Tunnel
 
-**Windows:**
-```powershell
-# Using Chocolatey
-choco install cloudflared
+**Windows - Direct Download (Recommended):**
 
-# Or download from:
-# https://github.com/cloudflare/cloudflared/releases/latest
-# Download cloudflared-windows-amd64.exe and rename to cloudflared.exe
+1. **Download:**
+   - Visit: https://github.com/cloudflare/cloudflared/releases/latest
+   - Download: `cloudflared-windows-amd64.exe`
+
+2. **Install:**
+   ```powershell
+   # Create folder
+   mkdir C:\cloudflared
+   
+   # Move downloaded file (adjust path if needed)
+   move $env:USERPROFILE\Downloads\cloudflared-windows-amd64.exe C:\cloudflared\cloudflared.exe
+   ```
+
+3. **Add to PATH:**
+   - Press `Win + X` → **System** → **Advanced system settings**
+   - Click **Environment Variables**
+   - Under **System variables**, find **Path** → Click **Edit**
+   - Click **New** → Add: `C:\cloudflared`
+   - Click **OK** on all windows
+   - **Close and reopen PowerShell**
+
+4. **Verify installation:**
+   ```powershell
+   cloudflared --version
+   ```
+
+**Alternative - Using winget (if available):**
+```powershell
+winget install --id Cloudflare.cloudflared
 ```
 
-**Verify installation:**
-```powershell
-cloudflared --version
-```
+**See `INSTALL_CLOUDFLARE_TUNNEL.md` for detailed instructions.**
 
 ### Step 2: Authenticate with Cloudflare
 
