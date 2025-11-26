@@ -68,13 +68,22 @@ export default function AdminDashboard() {
       try {
         // Fetch all data in parallel
         const [orders, productStats, customers] = await Promise.all([
-          ordersService.getAll(),
-          productsServiceEnhanced.getStats(),
-          customersService.getAll(),
+          ordersService.getAll().catch(err => {
+            console.error('Error fetching orders:', err)
+            return []
+          }),
+          productsServiceEnhanced.getStats().catch(err => {
+            console.error('Error fetching product stats:', err)
+            return { total: 0, inStock: 0, outOfStock: 0, categories: 0, brands: 0 }
+          }),
+          customersService.getAll().catch(err => {
+            console.error('Error fetching customers:', err)
+            return []
+          }),
         ])
 
         // Calculate revenue
-        const revenue = orders.reduce((sum, order) => sum + Number(order.total || 0), 0)
+        const revenue = (orders || []).reduce((sum, order) => sum + Number(order.total || 0), 0)
 
         // Get last 6 months sales data
         const now = new Date()
@@ -84,7 +93,7 @@ export default function AdminDashboard() {
           const monthStart = date.toISOString()
           const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0).toISOString()
           
-          const monthOrders = orders.filter(o => {
+          const monthOrders = (orders || []).filter(o => {
             const orderDate = new Date(o.created_at)
             return orderDate >= new Date(monthStart) && orderDate <= new Date(monthEnd)
           })
@@ -98,19 +107,20 @@ export default function AdminDashboard() {
 
         setStats({
           totalRevenue: revenue,
-          totalOrders: orders.length,
-          totalProducts: productStats.total,
-          totalCustomers: customers.length,
+          totalOrders: (orders || []).length,
+          totalProducts: productStats?.total || 0,
+          totalCustomers: (customers || []).length,
           loading: false,
         })
-        setSalesData(monthlyData)
+        setSalesData(monthlyData.length > 0 ? monthlyData : SALES_DATA)
         
         // Get recent orders (last 5)
-        const recent = orders.slice(0, 5)
+        const recent = (orders || []).slice(0, 5)
         setRecentOrders(recent)
       } catch (error) {
         console.error('Failed to fetch dashboard data:', error)
         setStats(prev => ({ ...prev, loading: false }))
+        setRecentOrders([])
       }
     }
 

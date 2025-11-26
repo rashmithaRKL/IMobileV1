@@ -9,14 +9,16 @@ type MessageUpdate = Database['public']['Tables']['messages']['Update']
 export const messagesService = {
   // Get all messages (admin only)
   async getAll() {
-    const supabase = createClient()
-    const { data, error } = await supabase
-      .from('messages')
-      .select('*')
-      .order('created_at', { ascending: false })
+    return withRetry(async () => {
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from('messages')
+        .select('*')
+        .order('created_at', { ascending: false })
 
-    if (error) throw error
-    return data as Message[]
+      if (error) throw handleSupabaseError(error)
+      return (data || []) as Message[]
+    })
   },
 
   // Get single message

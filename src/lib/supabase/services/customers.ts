@@ -54,12 +54,13 @@ export const customersService = {
             ? (Date.now() - lastOrder.getTime()) < 90 * 24 * 60 * 60 * 1000
             : false
 
-          // Get detailed stats if available
+          // Get detailed stats if available (don't fail if this errors)
           let stats = null
           try {
             stats = await analyticsService.getCustomerStats(profile.id)
           } catch (err) {
             // Use calculated values if function fails
+            console.warn('Failed to get customer stats for', profile.id, err)
           }
 
           return {
@@ -76,7 +77,7 @@ export const customersService = {
         })
       )
 
-      return customers
+      return customers || []
     })
   },
 

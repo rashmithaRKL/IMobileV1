@@ -23,9 +23,10 @@ export default function MessagesPage() {
       try {
         setLoading(true)
         const data = await messagesService.getAll()
-        setMessages(data)
+        setMessages(data || [])
       } catch (error) {
         console.error('Failed to fetch messages:', error)
+        setMessages([])
       } finally {
         setLoading(false)
       }

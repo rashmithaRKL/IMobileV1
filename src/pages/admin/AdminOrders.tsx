@@ -23,9 +23,10 @@ export default function OrdersPage() {
       try {
         setLoading(true)
         const data = await ordersService.getAll()
-        setOrders(data)
+        setOrders(data || [])
       } catch (error) {
         console.error('Failed to fetch orders:', error)
+        setOrders([])
       } finally {
         setLoading(false)
       }

@@ -20,9 +20,10 @@ export default function CustomersPage() {
       try {
         setLoading(true)
         const data = await customersService.getAll()
-        setCustomers(data)
+        setCustomers(data || [])
       } catch (error) {
         console.error('Failed to fetch customers:', error)
+        setCustomers([])
       } finally {
         setLoading(false)
       }

@@ -9,17 +9,19 @@ type OrderUpdate = Database['public']['Tables']['orders']['Update']
 export const ordersService = {
   // Get all orders (admin)
   async getAll() {
-    const supabase = createClient()
-    const { data, error } = await supabase
-      .from('orders')
-      .select(`
-        *,
-        order_items (*)
-      `)
-      .order('created_at', { ascending: false })
+    return withRetry(async () => {
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          order_items (*)
+        `)
+        .order('created_at', { ascending: false })
 
-    if (error) throw error
-    return data
+      if (error) throw handleSupabaseError(error)
+      return data || []
+    })
   },
 
   // Get user's orders
