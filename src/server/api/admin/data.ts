@@ -1,6 +1,20 @@
-import { Request, Response } from 'express'
+import { Request, Response, NextFunction } from 'express'
 import { createClient } from '@supabase/supabase-js'
-import { asyncHandler } from '../utils/async-handler'
+
+// Async error wrapper
+const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => Promise<any>) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    Promise.resolve(fn(req, res, next)).catch((error) => {
+      console.error('[Admin Data API] Unhandled async error:', error)
+      if (!res.headersSent) {
+        res.status(error.status || 500).json({
+          error: error.message || 'Internal Server Error',
+          ...(process.env.NODE_ENV === 'development' && { stack: error.stack })
+        })
+      }
+    })
+  }
+}
 
 /**
  * GET /api/admin/data/orders
