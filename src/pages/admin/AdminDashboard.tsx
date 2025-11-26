@@ -231,15 +231,15 @@ export default function AdminDashboard() {
                 className="bg-card border border-border rounded-lg p-6 hover:shadow-lg transition-shadow"
               >
                 <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-muted-foreground text-sm">{stat.label}</p>
-                    <h3 className="text-3xl font-bold mt-2">{stat.value}</h3>
-                    <p className="text-green-600 text-sm mt-2 flex items-center gap-1">
+                  <div className="flex-1">
+                    <p className="text-muted-foreground text-sm font-medium">{stat.label}</p>
+                    <h3 className="text-3xl font-bold mt-2 text-foreground">{stat.value || '0'}</h3>
+                    <p className="text-green-600 dark:text-green-400 text-sm mt-2 flex items-center gap-1">
                       <TrendingUp className="w-4 h-4" />
                       {stat.change}
                     </p>
                   </div>
-                  <div className={`${stat.color} p-3 rounded-lg text-white`}>
+                  <div className={`${stat.color} p-3 rounded-lg text-white flex-shrink-0`}>
                     <Icon className="w-6 h-6" />
                   </div>
                 </div>
