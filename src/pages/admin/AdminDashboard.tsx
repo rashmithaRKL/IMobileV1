@@ -7,6 +7,10 @@ import { ordersService } from "@/lib/supabase/services/orders"
 import { productsServiceEnhanced } from "@/lib/supabase/services/products-enhanced"
 import { customersService } from "@/lib/supabase/services/customers"
 import { analyticsService } from "@/lib/supabase/services/analytics"
+import AdminLayout from "@/components/admin-layout"
+import type { Database } from "@/lib/supabase/types"
+
+type Order = Database['public']['Tables']['orders']['Row']
 
 // Lazy load heavy chart components
 const LineChart = lazy(() => import("recharts").then(mod => ({ default: mod.LineChart })))
@@ -28,12 +32,6 @@ const SALES_DATA = [
   { month: "Jun", sales: 2390, orders: 200 },
 ]
 
-const RECENT_ORDERS = [
-  { id: "ORD001", customer: "John Doe", amount: "$1,299", status: "Completed" },
-  { id: "ORD002", customer: "Jane Smith", amount: "$899", status: "Pending" },
-  { id: "ORD003", customer: "Mike Johnson", amount: "$2,499", status: "Completed" },
-  { id: "ORD004", customer: "Sarah Williams", amount: "$599", status: "Processing" },
-]
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -63,6 +61,7 @@ export default function AdminDashboard() {
     loading: true,
   })
   const [salesData, setSalesData] = useState(SALES_DATA)
+  const [recentOrders, setRecentOrders] = useState<Order[]>([])
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -105,6 +104,10 @@ export default function AdminDashboard() {
           loading: false,
         })
         setSalesData(monthlyData)
+        
+        // Get recent orders (last 5)
+        const recent = orders.slice(0, 5)
+        setRecentOrders(recent)
       } catch (error) {
         console.error('Failed to fetch dashboard data:', error)
         setStats(prev => ({ ...prev, loading: false }))
@@ -145,8 +148,27 @@ export default function AdminDashboard() {
     },
   ]
 
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "Delivered":
+      case "Completed":
+        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+      case "Shipped":
+        return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+      case "Processing":
+        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+      case "Pending":
+        return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200"
+      case "Cancelled":
+        return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+      default:
+        return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200"
+    }
+  }
+
   return (
-    <div className="space-y-8">
+    <AdminLayout>
+      <div className="space-y-8">
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
         <h1 className="text-4xl font-bold">Dashboard</h1>
@@ -258,40 +280,37 @@ export default function AdminDashboard() {
       <motion.div variants={itemVariants} className="bg-card border border-border rounded-lg p-6">
         <h3 className="text-lg font-bold mb-4">Recent Orders</h3>
         <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-border">
-                <th className="text-left py-3 px-4 font-semibold">Order ID</th>
-                <th className="text-left py-3 px-4 font-semibold">Customer</th>
-                <th className="text-left py-3 px-4 font-semibold">Amount</th>
-                <th className="text-left py-3 px-4 font-semibold">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {RECENT_ORDERS.map((order) => (
-                <tr key={order.id} className="border-b border-border hover:bg-muted/50 transition-colors">
-                  <td className="py-3 px-4 font-semibold">{order.id}</td>
-                  <td className="py-3 px-4">{order.customer}</td>
-                  <td className="py-3 px-4">{order.amount}</td>
-                  <td className="py-3 px-4">
-                    <span
-                      className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                        order.status === "Completed"
-                          ? "bg-green-100 text-green-800"
-                          : order.status === "Pending"
-                            ? "bg-yellow-100 text-yellow-800"
-                            : "bg-blue-100 text-blue-800"
-                      }`}
-                    >
-                      {order.status}
-                    </span>
-                  </td>
+          {recentOrders.length === 0 ? (
+            <div className="p-8 text-center text-muted-foreground">No orders found</div>
+          ) : (
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="text-left py-3 px-4 font-semibold">Order ID</th>
+                  <th className="text-left py-3 px-4 font-semibold">Customer</th>
+                  <th className="text-left py-3 px-4 font-semibold">Amount</th>
+                  <th className="text-left py-3 px-4 font-semibold">Status</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {recentOrders.map((order) => (
+                  <tr key={order.id} className="border-b border-border hover:bg-muted/50 transition-colors">
+                    <td className="py-3 px-4 font-semibold">{order.id.substring(0, 8).toUpperCase()}</td>
+                    <td className="py-3 px-4">{order.customer_email || order.shipping_address || "N/A"}</td>
+                    <td className="py-3 px-4">${Number(order.total || 0).toFixed(2)}</td>
+                    <td className="py-3 px-4">
+                      <span className={`px-3 py-1 rounded-full text-sm font-semibold ${getStatusColor(order.status || "Pending")}`}>
+                        {order.status || "Pending"}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </motion.div>
-    </div>
+      </div>
+    </AdminLayout>
   )
 }

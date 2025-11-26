@@ -6,6 +6,7 @@ import { Search, Edit2, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { customersService } from "@/lib/supabase/services/customers"
+import AdminLayout from "@/components/admin-layout"
 import type { Customer } from "@/lib/supabase/services/customers"
 
 export default function CustomersPage() {
@@ -53,7 +54,8 @@ export default function CustomersPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <AdminLayout>
+      <div className="space-y-6">
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           <div>
@@ -151,6 +153,7 @@ export default function CustomersPage() {
           </table>
         </div>
       </motion.div>
-    </div>
+      </div>
+    </AdminLayout>
   )
 }

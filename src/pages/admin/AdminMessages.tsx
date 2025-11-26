@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { messagesService } from "@/lib/supabase/services/messages"
 import MessageDetailsModal from "@/components/admin/message-details-modal"
+import AdminLayout from "@/components/admin-layout"
 import type { Database } from "@/lib/supabase/types"
 
 type Message = Database['public']['Tables']['messages']['Row']
@@ -64,7 +65,8 @@ export default function MessagesPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <AdminLayout>
+      <div className="space-y-6">
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
         <div>
@@ -169,6 +171,7 @@ export default function MessagesPage() {
 
       {/* Message Details Modal */}
       {selectedMessage && <MessageDetailsModal messageId={selectedMessage} onClose={() => setSelectedMessage(null)} />}
-    </div>
+      </div>
+    </AdminLayout>
   )
 }

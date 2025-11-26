@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { productsService } from "@/lib/supabase/services/products"
 import ProductModal from "@/components/admin/product-modal"
+import AdminLayout from "@/components/admin-layout"
 import type { Database } from "@/lib/supabase/types"
 
 type Product = Database['public']['Tables']['products']['Row']
@@ -64,7 +65,8 @@ export default function ProductsPage() {
 
 
   return (
-    <div className="space-y-6">
+    <AdminLayout>
+      <div className="space-y-6">
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
         <div className="flex items-center justify-between">
@@ -176,6 +178,7 @@ export default function ProductsPage() {
 
       {/* Product Modal */}
       <ProductModal isOpen={isModalOpen} onClose={handleModalClose} editingProductId={editingProduct} />
-    </div>
+      </div>
+    </AdminLayout>
   )
 }

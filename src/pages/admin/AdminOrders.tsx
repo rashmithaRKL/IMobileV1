@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ordersService } from "@/lib/supabase/services/orders"
 import OrderDetailsModal from "@/components/admin/order-details-modal"
+import AdminLayout from "@/components/admin-layout"
 import type { Database } from "@/lib/supabase/types"
 
 type Order = Database['public']['Tables']['orders']['Row']
@@ -60,7 +61,8 @@ export default function OrdersPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <AdminLayout>
+      <div className="space-y-6">
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
         <div>
@@ -144,6 +146,7 @@ export default function OrdersPage() {
 
       {/* Order Details Modal */}
       {selectedOrder && <OrderDetailsModal orderId={selectedOrder} onClose={() => setSelectedOrder(null)} />}
-    </div>
+      </div>
+    </AdminLayout>
   )
 }
