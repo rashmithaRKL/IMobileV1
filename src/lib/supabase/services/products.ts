@@ -105,48 +105,100 @@ export const productsService = {
     })
   },
 
-  // Create product
+  // Create product - uses backend API with service role
   async create(product: ProductInsert) {
-    return withRetry(async () => {
-      const supabase = createClient()
-      const { data, error } = await supabase
-        .from('products')
-        .insert(product)
-        .select()
-        .single()
+    try {
+      const { getApiUrl } = await import('@/lib/utils/api')
+      const response = await fetch(getApiUrl('/api/admin/products'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(product),
+      })
+      
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to create product')
+      }
+      
+      const result = await response.json()
+      return result.data as Product
+    } catch (error) {
+      console.error('Error creating product via API:', error)
+      // Fallback to direct Supabase call
+      return withRetry(async () => {
+        const supabase = createClient()
+        const { data, error } = await supabase
+          .from('products')
+          .insert(product)
+          .select()
+          .single()
 
-      if (error) throw handleSupabaseError(error)
-      return data as Product
-    })
+        if (error) throw handleSupabaseError(error)
+        return data as Product
+      })
+    }
   },
 
-  // Update product
+  // Update product - uses backend API with service role
   async update(id: string, updates: ProductUpdate) {
-    return withRetry(async () => {
-      const supabase = createClient()
-      const { data, error } = await supabase
-        .from('products')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single()
+    try {
+      const { getApiUrl } = await import('@/lib/utils/api')
+      const response = await fetch(getApiUrl(`/api/admin/products/${id}`), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+      })
+      
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to update product')
+      }
+      
+      const result = await response.json()
+      return result.data as Product
+    } catch (error) {
+      console.error('Error updating product via API:', error)
+      // Fallback to direct Supabase call
+      return withRetry(async () => {
+        const supabase = createClient()
+        const { data, error } = await supabase
+          .from('products')
+          .update(updates)
+          .eq('id', id)
+          .select()
+          .single()
 
-      if (error) throw handleSupabaseError(error)
-      return data as Product
-    })
+        if (error) throw handleSupabaseError(error)
+        return data as Product
+      })
+    }
   },
 
-  // Delete product
+  // Delete product - uses backend API with service role
   async delete(id: string) {
-    return withRetry(async () => {
-      const supabase = createClient()
-      const { error } = await supabase
-        .from('products')
-        .delete()
-        .eq('id', id)
+    try {
+      const { getApiUrl } = await import('@/lib/utils/api')
+      const response = await fetch(getApiUrl(`/api/admin/products/${id}`), {
+        method: 'DELETE',
+      })
+      
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to delete product')
+      }
+    } catch (error) {
+      console.error('Error deleting product via API:', error)
+      // Fallback to direct Supabase call
+      return withRetry(async () => {
+        const supabase = createClient()
+        const { error } = await supabase
+          .from('products')
+          .delete()
+          .eq('id', id)
 
-      if (error) throw handleSupabaseError(error)
-    })
+        if (error) throw handleSupabaseError(error)
+      })
+    }
   },
 
   // Get categories

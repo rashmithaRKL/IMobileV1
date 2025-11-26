@@ -18,20 +18,31 @@ export default function OrdersPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedOrder, setSelectedOrder] = useState<string | null>(null)
 
-  useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        setLoading(true)
-        const data = await ordersService.getAll()
-        setOrders(data || [])
-      } catch (error) {
-        console.error('Failed to fetch orders:', error)
-        setOrders([])
-      } finally {
-        setLoading(false)
-      }
+  const fetchOrders = async () => {
+    try {
+      setLoading(true)
+      const data = await ordersService.getAll()
+      setOrders(data || [])
+    } catch (error) {
+      console.error('Failed to fetch orders:', error)
+      setOrders([])
+    } finally {
+      setLoading(false)
     }
+  }
+
+  useEffect(() => {
     fetchOrders()
+    
+    // Listen for order updates
+    const handleOrderUpdate = () => {
+      fetchOrders()
+    }
+    window.addEventListener('orderUpdated', handleOrderUpdate)
+    
+    return () => {
+      window.removeEventListener('orderUpdated', handleOrderUpdate)
+    }
   }, [])
 
   const filteredOrders = orders.filter((order) => {

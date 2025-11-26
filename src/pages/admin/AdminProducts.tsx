@@ -19,19 +19,30 @@ export default function ProductsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingProduct, setEditingProduct] = useState<string | null>(null)
 
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        setLoading(true)
-        const data = await productsService.getAll()
-        setProducts(data)
-      } catch (error) {
-        console.error('Failed to fetch products:', error)
-      } finally {
-        setLoading(false)
-      }
+  const fetchProducts = async () => {
+    try {
+      setLoading(true)
+      const data = await productsService.getAll()
+      setProducts(data)
+    } catch (error) {
+      console.error('Failed to fetch products:', error)
+    } finally {
+      setLoading(false)
     }
+  }
+
+  useEffect(() => {
     fetchProducts()
+    
+    // Listen for product updates
+    const handleProductUpdate = () => {
+      fetchProducts()
+    }
+    window.addEventListener('productUpdated', handleProductUpdate)
+    
+    return () => {
+      window.removeEventListener('productUpdated', handleProductUpdate)
+    }
   }, [])
 
   const filteredProducts = products.filter(
@@ -54,8 +65,7 @@ export default function ProductsPage() {
   const handleModalClose = () => {
     setIsModalOpen(false)
     setEditingProduct(null)
-    // Refetch products after modal closes
-    productsService.getAll().then(setProducts).catch(console.error)
+    // Products will be refetched via the event listener
   }
 
   const handleEdit = (id: string) => {

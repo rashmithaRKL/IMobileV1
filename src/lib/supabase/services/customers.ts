@@ -132,31 +132,64 @@ export const customersService = {
     })
   },
 
-  // Update customer profile
+  // Update customer profile - uses backend API with service role
   async update(id: string, updates: ProfileUpdate) {
-    return withRetry(async () => {
-      const supabase = createClient()
-      const { data, error } = await supabase
-        .from('profiles')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single()
+    try {
+      const { getApiUrl } = await import('@/lib/utils/api')
+      const response = await fetch(getApiUrl(`/api/admin/customers/${id}`), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+      })
+      
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to update customer')
+      }
+      
+      const result = await response.json()
+      return result.data
+    } catch (error) {
+      console.error('Error updating customer via API:', error)
+      // Fallback to direct Supabase call
+      return withRetry(async () => {
+        const supabase = createClient()
+        const { data, error } = await supabase
+          .from('profiles')
+          .update(updates)
+          .eq('id', id)
+          .select()
+          .single()
 
-      if (error) throw handleSupabaseError(error)
-      return data
-    })
+        if (error) throw handleSupabaseError(error)
+        return data
+      })
+    }
   },
 
-  // Delete customer (cascade will handle related data)
+  // Delete customer - uses backend API with service role
   async delete(id: string) {
-    return withRetry(async () => {
-      const supabase = createClient()
-      // Delete from auth.users will cascade to profiles
-      // Note: This requires service role key or admin privileges
-      const { error } = await supabase.auth.admin.deleteUser(id)
+    try {
+      const { getApiUrl } = await import('@/lib/utils/api')
+      const response = await fetch(getApiUrl(`/api/admin/customers/${id}`), {
+        method: 'DELETE',
+      })
       
-      if (error) throw handleSupabaseError(error)
-    })
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to delete customer')
+      }
+    } catch (error) {
+      console.error('Error deleting customer via API:', error)
+      // Fallback to direct Supabase call (may fail without service role)
+      return withRetry(async () => {
+        const supabase = createClient()
+        // Delete from auth.users will cascade to profiles
+        // Note: This requires service role key or admin privileges
+        const { error } = await supabase.auth.admin.deleteUser(id)
+        
+        if (error) throw handleSupabaseError(error)
+      })
+    }
   },
 }

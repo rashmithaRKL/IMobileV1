@@ -7,7 +7,8 @@ import { motion } from "framer-motion"
 import { X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { useProductStore } from "@/lib/product-store"
+import { productsService } from "@/lib/supabase/services/products"
+import { toast } from "sonner"
 
 interface ProductModalProps {
   isOpen: boolean
@@ -16,73 +17,97 @@ interface ProductModalProps {
 }
 
 export default function ProductModal({ isOpen, onClose, editingProductId }: ProductModalProps) {
-  const products = useProductStore((state) => state.products)
-  const addProduct = useProductStore((state) => state.addProduct)
-  const updateProduct = useProductStore((state) => state.updateProduct)
-
+  const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     name: "",
     category: "",
+    brand: "",
     price: "",
     stock: "",
     image: "",
     description: "",
+    condition: "new" as "new" | "used",
   })
 
   useEffect(() => {
-    if (editingProductId) {
-      const product = products.find((p) => p.id === editingProductId)
-      if (product) {
-        setFormData({
-          name: product.name,
-          category: product.category,
-          price: product.price.toString(),
-          stock: product.stock.toString(),
-          image: product.image,
-          description: product.description,
-        })
+    if (editingProductId && isOpen) {
+      const fetchProduct = async () => {
+        try {
+          setLoading(true)
+          const product = await productsService.getById(editingProductId)
+          if (product) {
+            setFormData({
+              name: product.name || "",
+              category: product.category || "",
+              brand: product.brand || "",
+              price: product.price?.toString() || "",
+              stock: product.stock?.toString() || "0",
+              image: product.image || product.images?.[0] || "",
+              description: product.description || "",
+              condition: (product.condition as "new" | "used") || "new",
+            })
+          }
+        } catch (error) {
+          console.error('Failed to fetch product:', error)
+          toast.error('Failed to load product details')
+        } finally {
+          setLoading(false)
+        }
       }
+      fetchProduct()
     } else {
       setFormData({
         name: "",
         category: "",
+        brand: "",
         price: "",
         stock: "",
         image: "",
         description: "",
+        condition: "new",
       })
     }
-  }, [editingProductId, isOpen, products])
+  }, [editingProductId, isOpen])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setLoading(true)
 
-    if (editingProductId) {
-      updateProduct(editingProductId, {
+    try {
+      const productData = {
         name: formData.name,
         category: formData.category,
+        brand: formData.brand || null,
         price: Number.parseFloat(formData.price),
-        stock: Number.parseInt(formData.stock),
+        stock: Number.parseInt(formData.stock) || 0,
         image: formData.image,
-        description: formData.description,
-      })
-    } else {
-      addProduct({
-        name: formData.name,
-        category: formData.category,
-        price: Number.parseFloat(formData.price),
-        stock: Number.parseInt(formData.stock),
-        image: formData.image,
-        description: formData.description,
-      })
+        images: formData.image ? [formData.image] : [],
+        description: formData.description || null,
+        condition: formData.condition,
+      }
+
+      if (editingProductId) {
+        await productsService.update(editingProductId, productData)
+        toast.success('Product updated successfully')
+      } else {
+        await productsService.create(productData)
+        toast.success('Product created successfully')
+      }
+
+      onClose()
+      // Trigger a page refresh by calling the parent's refresh handler
+      window.dispatchEvent(new Event('productUpdated'))
+    } catch (error: any) {
+      console.error('Failed to save product:', error)
+      toast.error(error.message || 'Failed to save product')
+    } finally {
+      setLoading(false)
     }
-
-    onClose()
   }
 
   if (!isOpen) return null
@@ -122,21 +147,46 @@ export default function ProductModal({ isOpen, onClose, editingProductId }: Prod
             />
           </div>
 
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold mb-2">Category</label>
+              <select
+                name="category"
+                value={formData.category}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-border rounded-lg bg-background"
+                required
+              >
+                <option value="">Select category</option>
+                <option value="mobile-phones">Mobile Phones</option>
+                <option value="accessories">Accessories</option>
+                <option value="tablets">Tablets</option>
+                <option value="smartwatches">Smartwatches</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold mb-2">Brand</label>
+              <Input
+                type="text"
+                name="brand"
+                value={formData.brand}
+                onChange={handleChange}
+                placeholder="Apple, Samsung, etc."
+              />
+            </div>
+          </div>
+
           <div>
-            <label className="block text-sm font-semibold mb-2">Category</label>
+            <label className="block text-sm font-semibold mb-2">Condition</label>
             <select
-              name="category"
-              value={formData.category}
+              name="condition"
+              value={formData.condition}
               onChange={handleChange}
               className="w-full px-3 py-2 border border-border rounded-lg bg-background"
               required
             >
-              <option value="">Select category</option>
-              <option value="Apple">Apple</option>
-              <option value="Samsung">Samsung</option>
-              <option value="Google">Google</option>
-              <option value="OnePlus">OnePlus</option>
-              <option value="Other">Other</option>
+              <option value="new">New</option>
+              <option value="used">Used</option>
             </select>
           </div>
 
@@ -191,10 +241,10 @@ export default function ProductModal({ isOpen, onClose, editingProductId }: Prod
           </div>
 
           <div className="flex gap-3 pt-4">
-            <Button type="submit" className="flex-1">
-              {editingProductId ? "Update" : "Add"} Product
+            <Button type="submit" className="flex-1" disabled={loading}>
+              {loading ? "Saving..." : editingProductId ? "Update" : "Add"} Product
             </Button>
-            <Button type="button" variant="outline" onClick={onClose} className="flex-1 bg-transparent">
+            <Button type="button" variant="outline" onClick={onClose} className="flex-1 bg-transparent" disabled={loading}>
               Cancel
             </Button>
           </div>

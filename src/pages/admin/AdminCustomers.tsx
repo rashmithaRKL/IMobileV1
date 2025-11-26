@@ -6,6 +6,7 @@ import { Search, Edit2, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { customersService } from "@/lib/supabase/services/customers"
+import CustomerModal from "@/components/admin/customer-modal"
 import AdminLayout from "@/components/admin-layout"
 import type { Customer } from "@/lib/supabase/services/customers"
 
@@ -14,21 +15,33 @@ export default function CustomersPage() {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [editingCustomerId, setEditingCustomerId] = useState<string | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+
+  const fetchCustomers = async () => {
+    try {
+      setLoading(true)
+      const data = await customersService.getAll()
+      setCustomers(data || [])
+    } catch (error) {
+      console.error('Failed to fetch customers:', error)
+      setCustomers([])
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    const fetchCustomers = async () => {
-      try {
-        setLoading(true)
-        const data = await customersService.getAll()
-        setCustomers(data || [])
-      } catch (error) {
-        console.error('Failed to fetch customers:', error)
-        setCustomers([])
-      } finally {
-        setLoading(false)
-      }
-    }
     fetchCustomers()
+    
+    // Listen for customer updates
+    const handleCustomerUpdate = () => {
+      fetchCustomers()
+    }
+    window.addEventListener('customerUpdated', handleCustomerUpdate)
+    
+    return () => {
+      window.removeEventListener('customerUpdated', handleCustomerUpdate)
+    }
   }, [])
 
   const filteredCustomers = customers.filter(
@@ -50,8 +63,12 @@ export default function CustomersPage() {
 
   const handleEdit = (id: string) => {
     setEditingCustomerId(id)
-    // Could open a modal here if needed
-    console.log('Edit customer:', id)
+    setIsModalOpen(true)
+  }
+
+  const handleModalClose = () => {
+    setIsModalOpen(false)
+    setEditingCustomerId(null)
   }
 
   return (
@@ -154,6 +171,9 @@ export default function CustomersPage() {
           </table>
         </div>
       </motion.div>
+
+      {/* Customer Modal */}
+      <CustomerModal isOpen={isModalOpen} onClose={handleModalClose} editingCustomerId={editingCustomerId} />
       </div>
     </AdminLayout>
   )

@@ -1,9 +1,14 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { X } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { useMessageStore } from "@/lib/message-store"
+import { messagesService } from "@/lib/supabase/services/messages"
+import { toast } from "sonner"
+import type { Database } from "@/lib/supabase/types"
+
+type Message = Database['public']['Tables']['messages']['Row']
 
 interface MessageDetailsModalProps {
   messageId: string
@@ -11,13 +16,67 @@ interface MessageDetailsModalProps {
 }
 
 export default function MessageDetailsModal({ messageId, onClose }: MessageDetailsModalProps) {
-  const messages = useMessageStore((state) => state.messages)
-  const updateMessageStatus = useMessageStore((state) => state.updateMessageStatus)
-  const message = messages.find((m) => m.id === messageId)
+  const [message, setMessage] = useState<Message | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [updating, setUpdating] = useState(false)
+
+  useEffect(() => {
+    const fetchMessage = async () => {
+      try {
+        setLoading(true)
+        const data = await messagesService.getById(messageId)
+        setMessage(data)
+      } catch (error) {
+        console.error('Failed to fetch message:', error)
+        toast.error('Failed to load message details')
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchMessage()
+  }, [messageId])
+
+  const handleStatusUpdate = async (status: Message['status']) => {
+    if (!message) return
+    
+    setUpdating(true)
+    try {
+      await messagesService.updateStatus(message.id, status)
+      setMessage({ ...message, status })
+      toast.success('Message status updated successfully')
+      window.dispatchEvent(new Event('messageUpdated'))
+    } catch (error: any) {
+      console.error('Failed to update message status:', error)
+      toast.error(error.message || 'Failed to update message status')
+    } finally {
+      setUpdating(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+        onClick={onClose}
+      >
+        <motion.div
+          initial={{ scale: 0.95, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="bg-card border border-border rounded-lg p-6 max-w-2xl w-full"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="text-center py-8">Loading message details...</div>
+        </motion.div>
+      </motion.div>
+    )
+  }
 
   if (!message) return null
 
-  const statuses = ["Unread", "Read", "Replied"] as const
+  const statuses: Message['status'][] = ["Unread", "Read", "Replied"]
 
   return (
     <motion.div
@@ -58,7 +117,11 @@ export default function MessageDetailsModal({ messageId, onClose }: MessageDetai
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Date</p>
-                <p className="font-semibold">{message.date}</p>
+                <p className="font-semibold">{new Date(message.created_at).toLocaleDateString()}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Status</p>
+                <p className="font-semibold">{message.status || 'Unread'}</p>
               </div>
             </div>
           </div>
@@ -68,7 +131,7 @@ export default function MessageDetailsModal({ messageId, onClose }: MessageDetai
             <h3 className="font-bold mb-4">Message</h3>
             <div className="bg-muted p-4 rounded-lg">
               <p className="font-semibold mb-2">{message.subject}</p>
-              <p className="text-muted-foreground whitespace-pre-wrap">{message.message}</p>
+              <p className="text-muted-foreground whitespace-pre-wrap">{message.message || message.content || 'No message content'}</p>
             </div>
           </div>
 
@@ -80,8 +143,9 @@ export default function MessageDetailsModal({ messageId, onClose }: MessageDetai
                 <Button
                   key={status}
                   variant={message.status === status ? "default" : "outline"}
-                  onClick={() => updateMessageStatus(message.id, status)}
+                  onClick={() => handleStatusUpdate(status)}
                   className="bg-transparent"
+                  disabled={updating}
                 >
                   {status}
                 </Button>

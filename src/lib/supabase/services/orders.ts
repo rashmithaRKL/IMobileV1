@@ -106,18 +106,37 @@ export const ordersService = {
     return orderData
   },
 
-  // Update order status
+  // Update order status - uses backend API with service role
   async updateStatus(id: string, status: Order['status']) {
-    const supabase = createClient()
-    const { data, error } = await supabase
-      .from('orders')
-      .update({ status })
-      .eq('id', id)
-      .select()
-      .single()
+    try {
+      const { getApiUrl } = await import('@/lib/utils/api')
+      const response = await fetch(getApiUrl(`/api/admin/orders/${id}/status`), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      })
+      
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to update order status')
+      }
+      
+      const result = await response.json()
+      return result.data
+    } catch (error) {
+      console.error('Error updating order status via API:', error)
+      // Fallback to direct Supabase call
+      const supabase = createClient()
+      const { data, error: supabaseError } = await supabase
+        .from('orders')
+        .update({ status })
+        .eq('id', id)
+        .select()
+        .single()
 
-    if (error) throw error
-    return data
+      if (supabaseError) throw supabaseError
+      return data
+    }
   },
 
   // Update order

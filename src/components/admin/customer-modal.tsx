@@ -1,13 +1,14 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { useCustomerStore } from "@/lib/customer-store"
+import { customersService } from "@/lib/supabase/services/customers"
+import { toast } from "sonner"
+import type { Customer } from "@/lib/supabase/services/customers"
 
 interface CustomerModalProps {
   isOpen: boolean
@@ -16,71 +17,76 @@ interface CustomerModalProps {
 }
 
 export default function CustomerModal({ isOpen, onClose, editingCustomerId }: CustomerModalProps) {
-  const customers = useCustomerStore((state) => state.customers)
-  const addCustomer = useCustomerStore((state) => state.addCustomer)
-  const updateCustomer = useCustomerStore((state) => state.updateCustomer)
-
+  const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     phone: "",
-    address: "",
-    status: "Active" as const,
+    whatsapp: "",
   })
 
   useEffect(() => {
-    if (editingCustomerId) {
-      const customer = customers.find((c) => c.id === editingCustomerId)
-      if (customer) {
-        setFormData({
-          name: customer.name,
-          email: customer.email,
-          phone: customer.phone,
-          address: customer.address,
-          status: customer.status,
-        })
+    if (editingCustomerId && isOpen) {
+      const fetchCustomer = async () => {
+        try {
+          setLoading(true)
+          const customer = await customersService.getById(editingCustomerId)
+          if (customer) {
+            setFormData({
+              name: customer.name || "",
+              email: customer.email || "",
+              phone: customer.phone || "",
+              whatsapp: customer.whatsapp || "",
+            })
+          }
+        } catch (error) {
+          console.error('Failed to fetch customer:', error)
+          toast.error('Failed to load customer details')
+        } finally {
+          setLoading(false)
+        }
       }
+      fetchCustomer()
     } else {
       setFormData({
         name: "",
         email: "",
         phone: "",
-        address: "",
-        status: "Active",
+        whatsapp: "",
       })
     }
-  }, [editingCustomerId, isOpen, customers])
+  }, [editingCustomerId, isOpen])
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setLoading(true)
 
-    if (editingCustomerId) {
-      updateCustomer(editingCustomerId, {
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
-        address: formData.address,
-        status: formData.status,
-      })
-    } else {
-      addCustomer({
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
-        address: formData.address,
-        joinDate: new Date().toISOString().split("T")[0],
-        totalOrders: 0,
-        totalSpent: 0,
-        status: formData.status,
-      })
+    try {
+      if (editingCustomerId) {
+        await customersService.update(editingCustomerId, {
+          name: formData.name,
+          phone: formData.phone || null,
+          whatsapp: formData.whatsapp || null,
+        })
+        toast.success('Customer updated successfully')
+      } else {
+        toast.error('Cannot create customers - they must register themselves')
+        return
+      }
+
+      onClose()
+      window.dispatchEvent(new Event('customerUpdated'))
+    } catch (error: any) {
+      console.error('Failed to save customer:', error)
+      toast.error(error.message || 'Failed to save customer')
+    } finally {
+      setLoading(false)
     }
-
-    onClose()
   }
 
   if (!isOpen) return null
@@ -97,11 +103,11 @@ export default function CustomerModal({ isOpen, onClose, editingCustomerId }: Cu
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
-        className="bg-card border border-border rounded-lg p-6 max-w-md w-full"
+        className="bg-card border border-border rounded-lg p-6 max-w-md w-full max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold">{editingCustomerId ? "Edit Customer" : "Add Customer"}</h2>
+          <h2 className="text-2xl font-bold">Edit Customer</h2>
           <button onClick={onClose} className="p-1 hover:bg-muted rounded-lg">
             <X className="w-5 h-5" />
           </button>
@@ -115,7 +121,7 @@ export default function CustomerModal({ isOpen, onClose, editingCustomerId }: Cu
               name="name"
               value={formData.name}
               onChange={handleChange}
-              placeholder="John Doe"
+              placeholder="Customer name"
               required
             />
           </div>
@@ -127,9 +133,11 @@ export default function CustomerModal({ isOpen, onClose, editingCustomerId }: Cu
               name="email"
               value={formData.email}
               onChange={handleChange}
-              placeholder="john@example.com"
-              required
+              placeholder="customer@example.com"
+              disabled
+              className="bg-muted"
             />
+            <p className="text-xs text-muted-foreground mt-1">Email cannot be changed</p>
           </div>
 
           <div>
@@ -139,41 +147,26 @@ export default function CustomerModal({ isOpen, onClose, editingCustomerId }: Cu
               name="phone"
               value={formData.phone}
               onChange={handleChange}
-              placeholder="+94 70 558 8789"
-              required
+              placeholder="+94 70 123 4567"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-semibold mb-2">Address</label>
+            <label className="block text-sm font-semibold mb-2">WhatsApp</label>
             <Input
-              type="text"
-              name="address"
-              value={formData.address}
+              type="tel"
+              name="whatsapp"
+              value={formData.whatsapp}
               onChange={handleChange}
-              placeholder="123 Main St, Meegoda, Sri Lanka"
-              required
+              placeholder="+94 70 123 4567"
             />
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold mb-2">Status</label>
-            <select
-              name="status"
-              value={formData.status}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-border rounded-lg bg-background"
-            >
-              <option value="Active">Active</option>
-              <option value="Inactive">Inactive</option>
-            </select>
           </div>
 
           <div className="flex gap-3 pt-4">
-            <Button type="submit" className="flex-1">
-              {editingCustomerId ? "Update" : "Add"} Customer
+            <Button type="submit" className="flex-1" disabled={loading}>
+              {loading ? "Saving..." : "Update"} Customer
             </Button>
-            <Button type="button" variant="outline" onClick={onClose} className="flex-1 bg-transparent">
+            <Button type="button" variant="outline" onClick={onClose} className="flex-1 bg-transparent" disabled={loading}>
               Cancel
             </Button>
           </div>

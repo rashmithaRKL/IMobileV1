@@ -61,18 +61,37 @@ export const messagesService = {
     return data as Message
   },
 
-  // Update message status
+  // Update message status - uses backend API with service role
   async updateStatus(id: string, status: Message['status']) {
-    const supabase = createClient()
-    const { data, error } = await supabase
-      .from('messages')
-      .update({ status })
-      .eq('id', id)
-      .select()
-      .single()
+    try {
+      const { getApiUrl } = await import('@/lib/utils/api')
+      const response = await fetch(getApiUrl(`/api/admin/messages/${id}/status`), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      })
+      
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to update message status')
+      }
+      
+      const result = await response.json()
+      return result.data as Message
+    } catch (error) {
+      console.error('Error updating message status via API:', error)
+      // Fallback to direct Supabase call
+      const supabase = createClient()
+      const { data, error: supabaseError } = await supabase
+        .from('messages')
+        .update({ status })
+        .eq('id', id)
+        .select()
+        .single()
 
-    if (error) throw error
-    return data as Message
+      if (supabaseError) throw supabaseError
+      return data as Message
+    }
   },
 
   // Update message
@@ -89,14 +108,28 @@ export const messagesService = {
     return data as Message
   },
 
-  // Delete message
+  // Delete message - uses backend API with service role
   async delete(id: string) {
-    const supabase = createClient()
-    const { error } = await supabase
-      .from('messages')
-      .delete()
-      .eq('id', id)
+    try {
+      const { getApiUrl } = await import('@/lib/utils/api')
+      const response = await fetch(getApiUrl(`/api/admin/messages/${id}`), {
+        method: 'DELETE',
+      })
+      
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to delete message')
+      }
+    } catch (error) {
+      console.error('Error deleting message via API:', error)
+      // Fallback to direct Supabase call
+      const supabase = createClient()
+      const { error: supabaseError } = await supabase
+        .from('messages')
+        .delete()
+        .eq('id', id)
 
-    if (error) throw error
+      if (supabaseError) throw supabaseError
+    }
   },
 }

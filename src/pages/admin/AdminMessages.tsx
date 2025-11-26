@@ -18,20 +18,31 @@ export default function MessagesPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedMessage, setSelectedMessage] = useState<string | null>(null)
 
-  useEffect(() => {
-    const fetchMessages = async () => {
-      try {
-        setLoading(true)
-        const data = await messagesService.getAll()
-        setMessages(data || [])
-      } catch (error) {
-        console.error('Failed to fetch messages:', error)
-        setMessages([])
-      } finally {
-        setLoading(false)
-      }
+  const fetchMessages = async () => {
+    try {
+      setLoading(true)
+      const data = await messagesService.getAll()
+      setMessages(data || [])
+    } catch (error) {
+      console.error('Failed to fetch messages:', error)
+      setMessages([])
+    } finally {
+      setLoading(false)
     }
+  }
+
+  useEffect(() => {
     fetchMessages()
+    
+    // Listen for message updates
+    const handleMessageUpdate = () => {
+      fetchMessages()
+    }
+    window.addEventListener('messageUpdated', handleMessageUpdate)
+    
+    return () => {
+      window.removeEventListener('messageUpdated', handleMessageUpdate)
+    }
   }, [])
 
   const filteredMessages = messages.filter(
