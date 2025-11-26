@@ -91,7 +91,8 @@ export const customersService = {
       )
 
       return customers || []
-    })
+      })
+    }
   },
 
   // Get single customer
