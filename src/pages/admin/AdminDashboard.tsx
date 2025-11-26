@@ -225,22 +225,23 @@ export default function AdminDashboard() {
         >
           {STATS.map((stat, index) => {
             const Icon = stat.icon
+            console.log(`[AdminDashboard] Rendering stat ${index}:`, stat.label, stat.value)
             return (
               <motion.div
-                key={index}
+                key={`${stat.label}-${index}`}
                 variants={itemVariants}
                 className="bg-card border border-border rounded-lg p-6 hover:shadow-lg transition-shadow"
               >
                 <div className="flex items-start justify-between">
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <p className="text-muted-foreground text-sm font-medium">{stat.label}</p>
-                    <h3 className="text-3xl font-bold mt-2 text-foreground">{stat.value}</h3>
+                    <h3 className="text-3xl font-bold mt-2 text-foreground break-words">{stat.value}</h3>
                     <p className="text-green-600 dark:text-green-400 text-sm mt-2 flex items-center gap-1">
-                      <TrendingUp className="w-4 h-4" />
-                      {stat.change}
+                      <TrendingUp className="w-4 h-4 flex-shrink-0" />
+                      <span>{stat.change}</span>
                     </p>
                   </div>
-                  <div className={`${stat.color} p-3 rounded-lg text-white flex-shrink-0`}>
+                  <div className={`${stat.color} p-3 rounded-lg text-white flex-shrink-0 ml-4`}>
                     <Icon className="w-6 h-6" />
                   </div>
                 </div>
