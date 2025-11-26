@@ -7,18 +7,32 @@ type MessageInsert = Database['public']['Tables']['messages']['Insert']
 type MessageUpdate = Database['public']['Tables']['messages']['Update']
 
 export const messagesService = {
-  // Get all messages (admin only)
+  // Get all messages (admin only) - uses backend API with service role
   async getAll() {
-    return withRetry(async () => {
-      const supabase = createClient()
-      const { data, error } = await supabase
-        .from('messages')
-        .select('*')
-        .order('created_at', { ascending: false })
+    try {
+      const { getApiUrl } = await import('@/lib/utils/api')
+      const response = await fetch(getApiUrl('/api/admin/data/messages'))
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch messages: ${response.statusText}`)
+      }
+      
+      const result = await response.json()
+      return (result.data || []) as Message[]
+    } catch (error) {
+      console.error('Error fetching messages from API:', error)
+      // Fallback to direct Supabase call
+      return withRetry(async () => {
+        const supabase = createClient()
+        const { data, error } = await supabase
+          .from('messages')
+          .select('*')
+          .order('created_at', { ascending: false })
 
-      if (error) throw handleSupabaseError(error)
-      return (data || []) as Message[]
-    })
+        if (error) throw handleSupabaseError(error)
+        return (data || []) as Message[]
+      })
+    }
   },
 
   // Get single message

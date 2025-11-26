@@ -19,9 +19,22 @@ export interface Customer {
 }
 
 export const customersService = {
-  // Get all customers with order statistics
+  // Get all customers with order statistics - uses backend API with service role
   async getAll() {
-    return withRetry(async () => {
+    try {
+      const { getApiUrl } = await import('@/lib/utils/api')
+      const response = await fetch(getApiUrl('/api/admin/data/customers'))
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch customers: ${response.statusText}`)
+      }
+      
+      const result = await response.json()
+      return result.data || []
+    } catch (error) {
+      console.error('Error fetching customers from API:', error)
+      // Fallback to direct Supabase call
+      return withRetry(async () => {
       const supabase = createClient()
       
       // Get all profiles

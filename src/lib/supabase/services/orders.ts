@@ -7,21 +7,35 @@ type OrderInsert = Database['public']['Tables']['orders']['Insert']
 type OrderUpdate = Database['public']['Tables']['orders']['Update']
 
 export const ordersService = {
-  // Get all orders (admin)
+  // Get all orders (admin) - uses backend API with service role
   async getAll() {
-    return withRetry(async () => {
-      const supabase = createClient()
-      const { data, error } = await supabase
-        .from('orders')
-        .select(`
-          *,
-          order_items (*)
-        `)
-        .order('created_at', { ascending: false })
+    try {
+      const { getApiUrl } = await import('@/lib/utils/api')
+      const response = await fetch(getApiUrl('/api/admin/data/orders'))
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch orders: ${response.statusText}`)
+      }
+      
+      const result = await response.json()
+      return result.data || []
+    } catch (error) {
+      console.error('Error fetching orders from API:', error)
+      // Fallback to direct Supabase call
+      return withRetry(async () => {
+        const supabase = createClient()
+        const { data, error } = await supabase
+          .from('orders')
+          .select(`
+            *,
+            order_items (*)
+          `)
+          .order('created_at', { ascending: false })
 
-      if (error) throw handleSupabaseError(error)
-      return data || []
-    })
+        if (error) throw handleSupabaseError(error)
+        return data || []
+      })
+    }
   },
 
   // Get user's orders

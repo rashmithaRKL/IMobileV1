@@ -66,6 +66,19 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
+        // Try to fetch stats from backend API first
+        const { getApiUrl } = await import('@/lib/utils/api')
+        let statsData = null
+        try {
+          const statsResponse = await fetch(getApiUrl('/api/admin/data/stats'))
+          if (statsResponse.ok) {
+            const statsResult = await statsResponse.json()
+            statsData = statsResult.data
+          }
+        } catch (err) {
+          console.warn('Failed to fetch stats from API, using fallback:', err)
+        }
+
         // Fetch all data in parallel
         const [orders, productStats, customers] = await Promise.all([
           ordersService.getAll().catch(err => {
@@ -105,11 +118,12 @@ export default function AdminDashboard() {
           })
         }
 
+        // Use stats from API if available, otherwise use calculated values
         setStats({
-          totalRevenue: revenue,
-          totalOrders: (orders || []).length,
-          totalProducts: productStats?.total || 0,
-          totalCustomers: (customers || []).length,
+          totalRevenue: statsData?.totalRevenue ?? revenue,
+          totalOrders: statsData?.totalOrders ?? (orders || []).length,
+          totalProducts: statsData?.totalProducts ?? (productStats?.total || 0),
+          totalCustomers: statsData?.totalCustomers ?? (customers || []).length,
           loading: false,
         })
         setSalesData(monthlyData.length > 0 ? monthlyData : SALES_DATA)
