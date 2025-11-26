@@ -62,10 +62,18 @@ export const customersService = {
             ? new Date(Math.max(...userOrders.map(o => new Date(o.created_at).getTime())))
             : null
           
-          // Customer is active if they have orders in last 90 days
-          const isActive = lastOrder 
+          // Customer is active if:
+          // 1. They have orders in last 90 days, OR
+          // 2. They signed up recently (within last 30 days) - new customers are considered active
+          const profileCreatedAt = new Date(profile.created_at)
+          const daysSinceSignup = (Date.now() - profileCreatedAt.getTime()) / (1000 * 60 * 60 * 24)
+          const isNewCustomer = daysSinceSignup < 30
+          
+          const hasRecentOrder = lastOrder 
             ? (Date.now() - lastOrder.getTime()) < 90 * 24 * 60 * 60 * 1000
             : false
+          
+          const isActive = hasRecentOrder || isNewCustomer
 
           // Get detailed stats if available (don't fail if this errors)
           let stats = null
