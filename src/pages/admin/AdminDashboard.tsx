@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, lazy, Suspense } from "react"
+import React, { useEffect, useState, lazy, Suspense } from "react"
 import { motion } from "framer-motion"
 import { TrendingUp, Package, ShoppingCart, Users, DollarSign } from "lucide-react"
 import { ordersService } from "@/lib/supabase/services/orders"
@@ -148,7 +148,8 @@ export default function AdminDashboard() {
   }, [])
 
   // Compute STATS array based on current stats state
-  const STATS = [
+  // Use useMemo to ensure it updates when stats change
+  const STATS = React.useMemo(() => [
     {
       icon: DollarSign,
       label: "Total Revenue",
@@ -177,7 +178,7 @@ export default function AdminDashboard() {
       change: "+5.3%",
       color: "bg-orange-500",
     },
-  ]
+  ], [stats.totalRevenue, stats.totalOrders, stats.totalProducts, stats.totalCustomers])
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -233,7 +234,7 @@ export default function AdminDashboard() {
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <p className="text-muted-foreground text-sm font-medium">{stat.label}</p>
-                    <h3 className="text-3xl font-bold mt-2 text-foreground">{stat.value || '0'}</h3>
+                    <h3 className="text-3xl font-bold mt-2 text-foreground">{stat.value}</h3>
                     <p className="text-green-600 dark:text-green-400 text-sm mt-2 flex items-center gap-1">
                       <TrendingUp className="w-4 h-4" />
                       {stat.change}
