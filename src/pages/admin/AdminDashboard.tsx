@@ -119,13 +119,19 @@ export default function AdminDashboard() {
         }
 
         // Use stats from API if available, otherwise use calculated values
-        setStats({
+        const finalStats = {
           totalRevenue: statsData?.totalRevenue ?? revenue,
           totalOrders: statsData?.totalOrders ?? (orders || []).length,
           totalProducts: statsData?.totalProducts ?? (productStats?.total || 0),
           totalCustomers: statsData?.totalCustomers ?? (customers || []).length,
           loading: false,
-        })
+        }
+        
+        console.log('[AdminDashboard] Setting stats:', finalStats)
+        console.log('[AdminDashboard] Stats from API:', statsData)
+        console.log('[AdminDashboard] Calculated values:', { revenue, orders: (orders || []).length, products: productStats?.total, customers: (customers || []).length })
+        
+        setStats(finalStats)
         setSalesData(monthlyData.length > 0 ? monthlyData : SALES_DATA)
         
         // Get recent orders (last 5)
@@ -141,6 +147,7 @@ export default function AdminDashboard() {
     fetchDashboardData()
   }, [])
 
+  // Compute STATS array based on current stats state
   const STATS = [
     {
       icon: DollarSign,
