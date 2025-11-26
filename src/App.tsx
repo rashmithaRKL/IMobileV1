@@ -50,6 +50,7 @@ export default function App() {
         <Route path="/test-supabase" element={<TestSupabase />} />
         <Route path="/auth/error" element={<AuthError />} />
         <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/admin/dashboard" element={<AdminDashboard />} />
         <Route path="/admin/products" element={<AdminProducts />} />
         <Route path="/admin/orders" element={<AdminOrders />} />
         <Route path="/admin/customers" element={<AdminCustomers />} />
